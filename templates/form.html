@@ -1,0 +1,19 @@
+<div id="input_form">
+  <form action="{{url}}"
+        accept-charset="UTF-8"
+        method="POST"
+        enctype="multipart/form-data"
+        target="frame">
+    <label>Resim:</label><br>
+    <input type="file" name="image" accept="image/*"><br>
+    <br>
+    <label>Yorum:</label><br>
+    <textarea id="comment"
+              name="comment"
+              cols="40" rows="5"
+              autocomplete="off"></textarea><br>
+    <input type="submit" value="Gönder">
+    <input type="hidden" name="lat" value="{{lat}}">
+    <input type="hidden" name="lng" value="{{lng}}">
+  </form>
+</div>
