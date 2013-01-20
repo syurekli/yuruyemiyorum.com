@@ -7,6 +7,14 @@ var infoWindow = null;
 // The map.
 var map = null;
 
+// Click timer
+var click_timer = null;
+
+// Before displaying the info-window for adding a new marker after a click,
+// we wait for this many milliseconds, just in case the user intended to
+// double-click.
+DBL_CLICK_DELAY_MS = 300;
+
 function initialize() {
 	if (navigator.geolocation) {
 		navigator.geolocation.getCurrentPosition(
@@ -56,24 +64,33 @@ function showMap(position) {
 	map = new google.maps.Map(document.getElementById("map_canvas"), mapOptions);
 	
 	// Add click handlers for adding new points.
-	google.maps.event.addListener(map, "click", function(event) {
+	google.maps.event.addListener(map, "dblclick", function(event) {
+		window.clearTimeout(click_timer);
 		if (infoWindow) {
 			infoWindow.close();
 		}
-		infoWindow = new google.maps.InfoWindow({
-			content: "<p>...</p>",
-			position: event.latLng
-		});
-		$.get("/xform", { lat: event.latLng.lat(), lng: event.latLng.lng() },
-		      function(data) {
-			$("#frame").off("load");
-			$("#frame").on("load", function() {
-				addMarker(event.latLng, window.frame.marker_id);
-				loadMarker(window.frame.marker_id);
+	});
+	google.maps.event.addListener(map, "click", function(event) {
+		window.clearTimeout(click_timer);
+		click_timer = setTimeout(function() {
+			if (infoWindow) {
+				infoWindow.close();
+			}
+			infoWindow = new google.maps.InfoWindow({
+				content: "<p>...</p>",
+				position: event.latLng
 			});
-			infoWindow.setContent(data);
-		});
-		infoWindow.open(map);
+			$.get("/xform", { lat: event.latLng.lat(), lng: event.latLng.lng() },
+			      function(data) {
+				$("#frame").off("load");
+				$("#frame").on("load", function() {
+					addMarker(event.latLng, window.frame.marker_id);
+					loadMarker(window.frame.marker_id);
+				});
+				infoWindow.setContent(data);
+			});
+			infoWindow.open(map);
+		}, 300);
 	});
 	
 	// Load the markers.
