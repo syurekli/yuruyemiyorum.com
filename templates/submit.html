@@ -2,7 +2,11 @@
 <html>
   <head>
     <script type="text/javascript">
+{% if error %}
+			var error = "{{error}}";
+{% else %}
       var marker_id = "{{marker_id}}";
+{% endif %}
     </script>
   </head>
   <body></body>

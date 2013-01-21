@@ -1,4 +1,7 @@
 <div id="marker">
 	<img src="/image/{{image_key}}" height="100px" weight="100px">
 	<p>{{comment|nl2br}}</p>
+{% if user %}
+	<p>Ekleyen: {{user}}</p>
+{% endif %}
 </div>

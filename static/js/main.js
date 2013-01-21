@@ -15,7 +15,30 @@ var click_timer = null;
 // double-click.
 DBL_CLICK_DELAY_MS = 300;
 
+function getURLParameter(name) {
+  var val = RegExp(name + '=' + '(.+?)(&|$)').exec(location.search);
+	if (val) {
+		return decodeURI(val[1]);
+	} else {
+		return null;
+	}
+}
+
 function initialize() {
+	var lat = getURLParameter('lat');
+	var lng = getURLParameter('lng');
+	var zoom = getURLParameter('zoom');
+	if (lat && lng) {
+		// User has most likely been redirected from the sign-up flow.
+		// Replay the click that prompted the sign-up link.
+		latlng = new google.maps.LatLng(lat, lng);
+		showMap(latlng);
+		if (zoom) {
+			map.setZoom(parseInt(zoom));
+		}
+		showForm(latlng);
+		return;
+	}
 	if (navigator.geolocation) {
 		navigator.geolocation.getCurrentPosition(
 			// On success, center the map on user's location.
@@ -55,6 +78,34 @@ function loadMarker(marker_id) {
 	});	
 }
 
+function showForm(latLng) {
+	if (infoWindow) {
+		infoWindow.close();
+	}
+	infoWindow = new google.maps.InfoWindow({
+		content: "<p>...</p>",
+		position: latLng
+	});
+	$.get("/xform", {
+		lat: latLng.lat(),
+		lng: latLng.lng(),
+		zoom: map.getZoom()
+	}, function(data) {
+	  // Set up the target iframe to expect the response from POST.
+		$("#frame").off("load");
+		$("#frame").on("load", function() {
+		  if (window.frame.error) {
+		    infoWindow.setContent('<p>Hata: ' + window.frame.error + '</p>');
+		    return;
+		  }
+			addMarker(latLng, window.frame.marker_id);
+			loadMarker(window.frame.marker_id);
+		});
+		infoWindow.setContent(data);
+	});
+	infoWindow.open(map);
+}
+
 function showMap(position) {
 	var mapOptions = {
 		center: position,
@@ -64,33 +115,17 @@ function showMap(position) {
 	map = new google.maps.Map(document.getElementById("map_canvas"), mapOptions);
 	
 	// Add click handlers for adding new points.
-	google.maps.event.addListener(map, "dblclick", function(event) {
-		window.clearTimeout(click_timer);
-		if (infoWindow) {
-			infoWindow.close();
-		}
-	});
 	google.maps.event.addListener(map, "click", function(event) {
+		// Set a timer to display the form after we are almost sure that the
+		// user did not actually intend to double click.
 		window.clearTimeout(click_timer);
 		click_timer = setTimeout(function() {
-			if (infoWindow) {
-				infoWindow.close();
-			}
-			infoWindow = new google.maps.InfoWindow({
-				content: "<p>...</p>",
-				position: event.latLng
-			});
-			$.get("/xform", { lat: event.latLng.lat(), lng: event.latLng.lng() },
-			      function(data) {
-				$("#frame").off("load");
-				$("#frame").on("load", function() {
-					addMarker(event.latLng, window.frame.marker_id);
-					loadMarker(window.frame.marker_id);
-				});
-				infoWindow.setContent(data);
-			});
-			infoWindow.open(map);
-		}, 300);
+			showForm(event.latLng);
+		}, DBL_CLICK_DELAY_MS);
+	});
+	google.maps.event.addListener(map, "dblclick", function(event) {
+		// Disable the click handler which was scheduled in "click".
+		window.clearTimeout(click_timer);
 	});
 	
 	// Load the markers.
