@@ -50,6 +50,8 @@ function initialize() {
 			function() {
 				showMap(DEFAULT_LATLNG);
 			});
+	} else {
+	  showMap(DEFAULT_LATLNG);
 	}
 }
 

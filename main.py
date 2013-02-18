@@ -62,7 +62,7 @@ class FormHandler(webapp2.RequestHandler):
     if not user:
       template = jinja2_env.get_template('login.html')
       self.response.out.write(template.render({
-          'url': users.create_login_url('/?lat=%s&lng=%s&zoom=%s' % (
+          'google_url': users.create_login_url('/?lat=%s&lng=%s&zoom=%s' % (
               self.request.GET['lat'],
               self.request.GET['lng'],
               self.request.GET['zoom']))
